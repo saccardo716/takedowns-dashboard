@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Priority Content Removal Dashboard</title>
+  <style>
+    :root {
+      --green: #1DB954;
+      --green-dark: #169c46;
+      --black: #121212;
+      --surface: #1E1E1E;
+      --surface2: #282828;
+      --surface3: #333333;
+      --text: #FFFFFF;
+      --text-muted: #B3B3B3;
+      --border: #3a3a3a;
+      --danger: #E91429;
+      --warning: #F59B23;
+      --chip-bg: #2a2a2a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Circular', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      background: var(--black);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 14px;
+       }
+    /* Header */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .logo svg { width: 28px; height: 28px; }
+    .header-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .header-subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .header-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .sheet-link {
+      color: var(--green);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 12px;
+      border: 1px solid var(--green);
+      border-radius: 20px;
+      transition: all 0.15s;
+    }
+    .sheet-link:hover { background: var(--green); color: var(--black); }
+    .last-updated {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    /* Main */
+    .main { padding: 28px 32px; max-width: 1600px; margin: 0 auto; }
+    /* Summary section */
+    .summary-section { margin-bottom: 28px; }
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: auto 1fr 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+    .total-card {
+      background: var(--green);
+      border-radius: 12px;
+      padding: 20px 24px;
+      min-width: 140px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .total-card:hover { background: var(--green-dark); transform: translateY(-1px); }
+    .total-card.active { box-shadow: 0 0 0 2px white; }
+    .total-card .count {
+      font-size: 36px;
+      font-weight: 800;
+      color: var(--black);
+      line-height: 1;
+    }
+    .total-card .label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--black);
+      margin-top: 4px;
+      opacity: 0.75;
+    }
+    /* Breakdown cards */
+    .breakdown-card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 16px 20px;
+      border: 1px solid var(--border);
+    }
+    .breakdown-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+    .breakdown-items { display: flex; flex-wrap: wrap; gap: 8px; }
+    .breakdown-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 11px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 12px;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .breakdown-chip:hover { background: var(--surface3); border-color: var(--green); }
+    .breakdown-chip.active {
+      background: var(--green);
+      border-color: var(--green);
+      color: var(--black);
+      font-weight: 700;
+    }
+    .breakdown-chip .chip-count {
+      font-weight: 700;
+      font-size: 11px;
+    }
+    /* Filters */
+    .filters-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 240px;
+      max-width: 400px;
+    }
+    .search-wrap svg {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      width: 16px;
+      height: 16px;
+    }
+    .search-input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 9px 12px 9px 36px;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .search-input:focus { border-color: var(--green); }
+    .search-input::placeholder { color: var(--text-muted); }
+    .filter-select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 9px 28px 9px 12px;
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23b3b3b3' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      transition: border-color 0.15s;
+    }
+    .filter-select:focus { border-color: var(--green); }
+    .filter-select option { background: var(--surface2); }
+    .clear-btn {
+      padding: 9px 14px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .clear-btn:hover { border-color: var(--text-muted); color: var(--text); }
+    /* Results count */
+    .results-info {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .results-info span { color: var(--green); font-weight: 600; }
+    /* Table */
+    .table-container {
+      overflow-x: clip;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    thead {
+      background: var(--surface2);
+    }
+    th {
+      position: sticky;
+      top: 73px;
+      z-index: 10;
+      background: var(--surface2);
+      padding: 12px 14px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+    }
+    th:hover { color: var(--text); }
+    th.sorted-asc::after { content: " \2191"; color: var(--green); }
+    th.sorted-desc::after { content: " \2193"; color: var(--green); }
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface2); }
+    td {
+      padding: 11px 14px;
+      color: var(--text);
+      vertical-align: middle;
+    }
+    td.uri-cell {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+      min-width: 160px;
+    }
+    td.uri-cell a {
+      color: var(--green);
+      text-decoration: none;
+    }
+    td.uri-cell a:hover { text-decoration: underline; }
+    td.title-cell { font-weight: 600; min-width: 160px; }
+    td.artists-cell { color: var(--text-muted); min-width: 120px; }
+    td.label-cell { min-width: 120px; }
+    td.licensor-cell { min-width: 120px; }
+    td.date-cell {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      min-width: 130px;
+    }
+    td.pub-cell {
+      min-width: 200px;
+    }
+    .pub-tag {
+      display: inline-block;
+      padding: 3px 8px;
+      background: rgba(229, 20, 41, 0.15);
+      border: 1px solid rgba(229, 20, 41, 0.3);
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #ff5a6a;
+    }
+    .date-added {
+      display: block;
+      margin-top: 5px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+    .licensor-tag {
+      display: inline-block;
+      padding: 3px 8px;
+      background: rgba(29, 185, 84, 0.1);
+      border: 1px solid rgba(29, 185, 84, 0.2);
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--green);
+    }
+    /* Stream data columns */
+    td.streams-cell {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 12px;
+      text-align: right;
+      white-space: nowrap;
+      min-width: 90px;
+    }
+    td.priority-cell {
+      text-align: center;
+      min-width: 70px;
+    }
+    .priority-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border: 1px solid;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    /* Pagination */
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .page-info { font-size: 12px; color: var(--text-muted); }
+    .page-btns { display: flex; gap: 6px; }
+    .page-btn {
+      padding: 5px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface2);
+      color: var(--text);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .page-btn:hover:not(:disabled) { border-color: var(--green); color: var(--green); }
+    .page-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .page-btn.active { background: var(--green); border-color: var(--green); color: var(--black); font-weight: 700; }
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+    .empty-state svg { width: 40px; height: 40px; margin-bottom: 12px; opacity: 0.4; }
+    .empty-state p { font-size: 14px; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <svg viewBox="0 0 24 24" fill="#1DB954" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424a.622.622 0 01-.857.207c-2.348-1.435-5.304-1.76-8.785-.963a.622.622 0 01-.277-1.215c3.809-.87 7.077-.496 9.712 1.115.294.18.386.563.207.856zm1.223-2.722a.779.779 0 01-1.072.257c-2.687-1.652-6.785-2.131-9.965-1.166a.78.78 0 01-.973-.519.781.781 0 01.518-.973c3.632-1.102 8.147-.568 11.234 1.329a.78.78 0 01.258 1.072zm.105-2.835C14.692 8.95 9.375 8.775 6.297 9.71a.937.937 0 11-.543-1.793c3.563-1.08 9.484-.872 13.22 1.327a.937.937 0 01-.06 1.623z"/>
+    </svg>
+    <div>
+      <div class="header-title">Clearance Removal Notifications</div>
+      <div class="header-subtitle">Clearance &amp; Visibility Dashboard</div>
+    </div>
+  </div>
+  <div class="header-right">
+  <span class="last-updated" id="lastUpdated"></span>
+    <a class="sheet-link" href="<?= sheetUrl ?>" target="_blank">
+      <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      Open Sheet
+    </a>
+  </div>
+</div>
+
+<div class="main">
+  <!-- Summary -->
+  <div class="summary-section">
+    <div class="section-label">Overview</div>
+    <div class="summary-grid">
+      <div class="total-card" id="totalCard" onclick="clearAllFilters()">
+        <div class="count" id="totalCount">0</div>
+        <div class="label">Total Assets</div>
+      </div>
+      <div class="breakdown-card">
+        <div class="breakdown-title">By Licensor</div>
+        <div class="breakdown-items" id="licensorChips"></div>
+      </div>
+      <div class="breakdown-card">
+        <div class="breakdown-title">Publisher Lacking Clearance</div>
+        <div class="breakdown-items" id="publisherChips"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-row">
+    <div class="search-wrap">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input class="search-input" type="text" id="searchInput" placeholder="Search by title, artist, URI…" oninput="applyFilters()">
+    </div>
+    <select class="filter-select" id="licensorFilter" onchange="applyFilters()">
+      <option value="">All Licensors</option>
+    </select>
+    <select class="filter-select" id="publisherFilter" onchange="applyFilters()">
+      <option value="">All Publishers</option>
+    </select>
+    <button class="clear-btn" onclick="clearAllFilters()">Clear Filters</button>
+  </div>
+
+  <div class="results-info" id="resultsInfo"></div>
+
+  <!-- Table -->
+  <div class="table-container">
+    <table id="dataTable">
+      <thead>
+        <tr>
+          <th onclick="sortBy('uri')">Spotify URI</th>
+          <th onclick="sortBy('title')">Title</th>
+          <th onclick="sortBy('artists')">Artist</th>
+          <th class="streams-col" onclick="sortBy('globalStreams')">Global MV Streams</th>
+          <th class="priority-col" onclick="sortBy('priority')">Priority</th>
+          <th onclick="sortBy('label')">Label</th>
+          <th onclick="sortBy('licensor')">Licensor</th>
+          <th onclick="sortBy('earliestLiveDate')">Earliest Live Date</th>
+          <th onclick="sortBy('publishersLackingClearance')">Publishers Lacking Clearance</th>
+          <th onclick="sortBy('dateAdded')">Date Added</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+      </table>
+    <div id="emptyState" class="empty-state" style="display:none;">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <p>No results match your filters.</p>
+    </div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+</div>
+
+
+<script>
+const _payload = <?!= sheetData ?>;
+const RAW_DATA = _payload.rows;
+const MV_DATA_AVAILABLE = _payload.mvDataAvailable;
+
+const PAGE_SIZE = 50;
+let filteredData = [...RAW_DATA];
+let currentPage = 1;
+let sortCol = 'globalStreams';
+let sortDir = -1;
+let activeLicensor = null;
+let activePublisher = null;
+
+const COLS = ['uri','title','artists','globalStreams','priority','label','licensor','earliestLiveDate','publishersLackingClearance','dateAdded'];
+const NUMERIC_COLS = new Set(['globalStreams']);
+const PRIORITY_ORDER = { 'Critical': 4, 'High': 3, 'Medium': 2, 'Low': 1 };
+
+// --- Helpers ---
+function formatPlays(count) {
+  if (count == null) return '--';
+  if (count >= 1e9) return (count / 1e9).toFixed(1) + 'B';
+  if (count >= 1e6) return (count / 1e6).toFixed(1) + 'M';
+  if (count >= 1e3) return (count / 1e3).toFixed(1) + 'K';
+  return count.toLocaleString();
+}
+
+function priorityBadge(priority) {
+  var colors = { 'Critical': '#E91429', 'High': '#F59B23', 'Medium': '#F5D623', 'Low': '#B3B3B3' };
+  var color = colors[priority] || '#B3B3B3';
+  return '<span class="priority-badge" style="border-color:' + color + ';color:' + color + '">' + escHtml(priority) + '</span>';
+}
+
+function compareRows(a, b, col, dir) {
+  if (NUMERIC_COLS.has(col)) {
+    const av = a[col] != null ? a[col] : -1;
+    const bv = b[col] != null ? b[col] : -1;
+    return (av - bv) * dir;
+  }
+  if (col === 'priority') {
+    const av = PRIORITY_ORDER[a.priority] || 0;
+    const bv = PRIORITY_ORDER[b.priority] || 0;
+    return (av - bv) * dir;
+  }
+  if (col === 'dateAdded') {
+    const da = a.dateAdded || '', db = b.dateAdded || '';
+    if (!da && !db) return 0;
+    if (!da) return 1;
+    if (!db) return -1;
+    return da.localeCompare(db) * dir;
+  }
+  const av = a[col] || '', bv = b[col] || '';
+  return av.localeCompare(bv) * dir;
+}
+
+function escHtml(str) {
+  if (!str) return '—';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// --- Init ---
+function init() {
+  document.getElementById('lastUpdated').textContent = 'Data as of <?= lastUpdated ?>';
+
+  if (!MV_DATA_AVAILABLE) {
+    document.querySelectorAll('.streams-col, .priority-col').forEach(function(el) { el.style.display = 'none'; });
+  }
+
+  const licensors = [...new Set(RAW_DATA.map(function(r){return r.licensor;}).filter(Boolean))].sort();
+  const lSel = document.getElementById('licensorFilter');
+  licensors.forEach(function(l) {
+    const o = document.createElement('option');
+    o.value = l; o.textContent = l;
+    lSel.appendChild(o);
+  });
+
+  const pubs = [...new Set(RAW_DATA.map(function(r){return r.publishersLackingClearance;}).filter(Boolean))].sort();
+  const pSel = document.getElementById('publisherFilter');
+  pubs.forEach(function(p) {
+    const o = document.createElement('option');
+    o.value = p; o.textContent = p;
+    pSel.appendChild(o);
+  });
+
+  const lCount = {};
+  RAW_DATA.forEach(function(r) { if(r.licensor) lCount[r.licensor] = (lCount[r.licensor]||0)+1; });
+  const topLicensors = Object.entries(lCount).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
+  const lChips = document.getElementById('licensorChips');
+  topLicensors.forEach(function(entry) {
+    var name = entry[0], count = entry[1];
+    const chip = document.createElement('div');
+    chip.className = 'breakdown-chip';
+    chip.dataset.licensor = name;
+    chip.innerHTML = '<span>' + escHtml(name) + '</span><span class="chip-count">' + count.toLocaleString() + '</span>';
+    chip.onclick = function() { toggleLicensorFilter(name, chip); };
+    lChips.appendChild(chip);
+  });
+
+  const pCount = {};
+  RAW_DATA.forEach(function(r) { if(r.publishersLackingClearance) pCount[r.publishersLackingClearance] = (pCount[r.publishersLackingClearance]||0)+1; });
+  const topPubs = Object.entries(pCount).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
+  const pChips = document.getElementById('publisherChips');
+  topPubs.forEach(function(entry) {
+    var name = entry[0], count = entry[1];
+    const chip = document.createElement('div');
+    chip.className = 'breakdown-chip';
+    chip.dataset.publisher = name;
+    chip.innerHTML = '<span>' + (name.length > 35 ? escHtml(name.slice(0,32)) + '…' : escHtml(name)) + '</span><span class="chip-count">' + count.toLocaleString() + '</span>';
+    chip.onclick = function() { togglePublisherFilter(name, chip); };
+    pChips.appendChild(chip);
+  });
+
+  applyFilters();
+}
+
+function toggleLicensorFilter(name, chip) {
+  if (activeLicensor === name) {
+    activeLicensor = null;
+    document.getElementById('licensorFilter').value = '';
+    chip.classList.remove('active');
+  } else {
+    activeLicensor = name;
+    document.getElementById('licensorFilter').value = name;
+    document.querySelectorAll('[data-licensor]').forEach(function(c){c.classList.remove('active');});
+    chip.classList.add('active');
+  }
+  currentPage = 1;
+  applyFilters();
+}
+
+function togglePublisherFilter(name, chip) {
+  if (activePublisher === name) {
+  activePublisher = null;
+    document.getElementById('publisherFilter').value = '';
+    chip.classList.remove('active');
+  } else {
+    activePublisher = name;
+    document.getElementById('publisherFilter').value = name;
+    document.querySelectorAll('[data-publisher]').forEach(function(c){c.classList.remove('active');});
+    chip.classList.add('active');
+  }
+  currentPage = 1;
+  applyFilters();
+}
+
+function clearAllFilters() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('licensorFilter').value = '';
+  document.getElementById('publisherFilter').value = '';
+  activeLicensor = null;
+  activePublisher = null;
+  document.querySelectorAll('.breakdown-chip.active').forEach(function(c){c.classList.remove('active');});
+  currentPage = 1;
+  applyFilters();
+}
+
+function applyFilters() {
+  const search = document.getElementById('searchInput').value.toLowerCase().trim();
+  const licensor = document.getElementById('licensorFilter').value;
+  const publisher = document.getElementById('publisherFilter').value;
+
+  if (licensor !== activeLicensor) {
+    activeLicensor = licensor || null;
+    document.querySelectorAll('[data-licensor]').forEach(function(c){
+      c.classList.toggle('active', c.dataset.licensor === licensor && licensor !== '');
+    });
+  }
+  if (publisher !== activePublisher) {
+    activePublisher = publisher || null;
+    document.querySelectorAll('[data-publisher]').forEach(function(c){
+      c.classList.toggle('active', c.dataset.publisher === publisher && publisher !== '');
+    });
+  }
+
+  filteredData = RAW_DATA.filter(function(r) {
+    if (search && !(r.title + ' ' + r.artists + ' ' + r.uri + ' ' + r.label + ' ' + r.licensor + ' ' + r.publishersLackingClearance).toLowerCase().includes(search)) return false;
+    if (licensor && r.licensor !== licensor) return false;
+    if (publisher && r.publishersLackingClearance !== publisher) return false;
+    return true;
+    });
+
+  if (sortCol) {
+    filteredData.sort(function(a, b) { return compareRows(a, b, sortCol, sortDir); });
+  }
+
+  document.getElementById('totalCount').textContent = filteredData.length.toLocaleString();
+  currentPage = 1;
+  renderTable();
+}
+
+function sortBy(col) {
+  if (sortCol === col) sortDir *= -1;
+  else { sortCol = col; sortDir = 1; }
+
+  document.querySelectorAll('th').forEach(function(th) {
+    th.classList.remove('sorted-asc','sorted-desc');
+  });
+  var idx = COLS.indexOf(col);
+  if (idx >= 0) {
+    var ths = document.querySelectorAll('th');
+    if (idx < ths.length) ths[idx].classList.add(sortDir === 1 ? 'sorted-asc' : 'sorted-desc');
+  }
+
+  filteredData.sort(function(a, b) { return compareRows(a, b, col, sortDir); });
+  renderTable();
+}
+
+function renderTable() {
+  const total = filteredData.length;
+  const start = (currentPage-1)*PAGE_SIZE;
+  const end = Math.min(start+PAGE_SIZE, total);
+  const pageData = filteredData.slice(start, end);
+
+  const info = document.getElementById('resultsInfo');
+  info.innerHTML = total === RAW_DATA.length
+    ? 'Showing <span>' + total.toLocaleString() + '</span> assets'
+    : 'Showing <span>' + (start+1) + '–' + end + '</span> of <span>' + total.toLocaleString() + '</span> filtered assets';
+
+  const tbody = document.getElementById('tableBody');
+  const emptyState = document.getElementById('emptyState');
+
+  if (pageData.length === 0) {
+    tbody.innerHTML = '';
+    emptyState.style.display = 'block';
+    document.getElementById('pagination').innerHTML = '';
+    return;
+  }
+  emptyState.style.display = 'none';
+
+  var mvHidden = !MV_DATA_AVAILABLE;
+
+  tbody.innerHTML = pageData.map(function(r) {
+    var shortUri = r.trackId ? ('…' + r.trackId.slice(-8)) : r.uri;
+    var spotifyUrl = 'https://open.spotify.com/track/' + encodeURIComponent(r.trackId);
+    var dateStr = r.earliestLiveDate ? r.earliestLiveDate.split(' ')[0] : '—';
+    var streamsCol = mvHidden ? '' : '<td class="streams-cell streams-col">' + formatPlays(r.globalStreams) + '</td>';
+    var priorityCol = mvHidden ? '' : '<td class="priority-cell priority-col">' + priorityBadge(r.priority) + '</td>';
+    return '<tr>' +
+      '<td class="uri-cell"><a href="' + spotifyUrl + '" target="_blank" title="' + escHtml(r.uri) + '">' + shortUri + '</a></td>' +
+      '<td class="title-cell">' + escHtml(r.title) + '</td>' +
+      '<td class="artists-cell">' + escHtml(r.artists) + '</td>' +
+      streamsCol +
+      priorityCol +
+      '<td class="label-cell">' + escHtml(r.label) + '</td>' +
+      '<td class="licensor-cell"><span class="licensor-tag">' + escHtml(r.licensor) + '</span></td>' +
+      '<td class="date-cell">' + dateStr + '</td>' +
+      '<td class="pub-cell"><span class="pub-tag">' + escHtml(r.publishersLackingClearance) + '</span></td>' +
+      '<td class="date-cell">' + (r.dateAdded ? r.dateAdded.split(' ')[0] : '—') + '</td>' +
+    '</tr>';
+  }).join('');
+
+  renderPagination(total);
+}
+
+function renderPagination(total) {
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+  if (totalPages <= 1) { document.getElementById('pagination').innerHTML = ''; return; }
+
+  const range = new Set([1, totalPages, currentPage, currentPage-1, currentPage+1].filter(function(p){return p>=1&&p<=totalPages;}));
+  const sorted = [...range].sort(function(a,b){return a-b;});
+
+  var html = '<span class="page-info">Page ' + currentPage + ' of ' + totalPages + '</span><div class="page-btns">';
+  html += '<button class="page-btn" onclick="changePage(' + (currentPage-1) + ')" ' + (currentPage===1?'disabled':'') + '>‹</button>';
+
+  var prev = null;
+  sorted.forEach(function(p) {
+    if (prev && p - prev > 1) html += '<span style="color:var(--text-muted);padding:0 4px">…</span>';
+    html += '<button class="page-btn' + (p===currentPage?' active':'') + '" onclick="changePage(' + p + ')">' + p + '</button>';
+    prev = p;
+  });
+
+  html += '<button class="page-btn" onclick="changePage(' + (currentPage+1) + ')" ' + (currentPage===totalPages?'disabled':'') + '>›</button>';
+  html += '</div>';
+  document.getElementById('pagination').innerHTML = html;
+}
+
+function changePage(p) {
+  const totalPages = Math.ceil(filteredData.length / PAGE_SIZE);
+  if (p < 1 || p > totalPages) return;
+  currentPage = p;
+  renderTable();
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+init();
+</script>
+</body>
+</html>
