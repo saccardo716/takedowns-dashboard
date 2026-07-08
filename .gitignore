@@ -1,0 +1,15 @@
+# Secrets — never commit
+.streamlit/secrets.toml
+*.json
+!package.json
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+# OS
+.DS_Store
+# Legacy Apps Script files (optional — remove these lines if you want them in the repo)
+# Code.gs
+# appsscript.json
+# Clearance Removal Notifications.html
